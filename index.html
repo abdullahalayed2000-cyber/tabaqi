@@ -1428,6 +1428,8 @@ function dataTurn(){const g=Object.entries(GUIDE).map(([k,v])=>`${k}: ${v[0]} [S
   return `PROFILE: ${JSON.stringify(profileInfo())}\n\nGUIDANCE:\n${g}\n\nDATABASE:\n${catalog()}`}
 function normQ(t){return String(t||'').toLowerCase().replace(/[ً-ْـ]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[؟،؛]/g,' ').replace(/[^؀-ۿa-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
 const LTOP=[
+ ['serving_def',/(وش|ايش|شو|ما) ?(يعني|معني|معنا|هي|هو) ?(ال)?حصه|(ال)?حصه (وش|ايش) (يعني|هي)|(تعريف|معني) (ال)?حصه|كم (جرام|غرام) (في )?(ال)?حصه|what is a serving/,'**الحصة (حصة النشويات)** = كمية من الأكل فيها **15 جرام نشويات**.\n- مثل: ثلث كوب رز مطبوخ، أو شريحة توست، أو 3 تمرات صغيرة، أو نص رغيف عربي صغير.\n- كل أكلة حصتها تختلف بالوزن، لأن كل أكلة فيها نسبة نشويات مختلفة.\n- مثال: لو وجبتك فيها 45 جرام نشويات = 3 حصص.','A carb serving = an amount of food with **15 g carbohydrate** (e.g. ⅓ cup cooked rice, 1 slice toast, 3 small dates, ½ small Arabic bread). Each food’s serving weighs differently. Example: 45 g carbs = 3 servings.'],
+ ['grams_def',/(وش|ايش|شو) ?(يعني|معني) ?\d+ ?(جرام|غرام)|(الفرق|فرق) بين (ال)?(جرام|غرام)|(جرام|غرام) (وزن|الاكل)|what does \d+ ?g/,'**فيه نوعين جرامات، لا تخلط بينهم:**\n- **وزن الأكل** (مثل 100 جرام كبسة): هذا وزنها على الميزان.\n- **جرامات النشويات** (مثل 15 جرام نشويات): هذي كمية النشويات اللي داخل الأكلة.\n- مثال من التطبيق: 100 جرام كبسة دجاج فيها تقريباً 14.6 جرام نشويات = تقريباً حصة وحدة.\n- عشان كذا 100 جرام من أكلتين مختلفتين ممكن يكون فيها نشويات مختلفة.','Two kinds of grams: **food weight** (e.g. 100 g kabsa on a scale) and **carb grams** (the carbohydrate inside it). Example: 100 g chicken kabsa has about 14.6 g carbs ≈ 1 serving. So 100 g of two foods can have different carbs.'],
  ['emergency',/اغما|اغمي|اسعاف|جلوكاجون|تشنج|faint|glucagon|seizure/,'إذا كان **هبوط شديد** (أُغمي عليه، أو ما يقدر يبلع، أو تشنّج):\n- لا تحط أكل أو شرب في فمه.\n- أعطه الجلوكاجون إذا موصوف له.\n- اتصل بالإسعاف **997** أو روح المستشفى.','Severe low (fainted, cannot swallow, seizure):\n- Do not put food or drink in the mouth.\n- Give glucagon if prescribed.\n- Call **997** or go to hospital.'],
  ['carb_targets',/(كم|مقدار)\s?(حصه|حصص|نشويات|كارب)\s?(احتاج|اكل|اخذ|مسموح|في الوجبه|بالوجبه|باليوم)|احتاج كم|per meal/,'**أمثلة عامة** للنشويات:\n- الوجبة الرئيسية: النساء 45–60 جرام، والرجال 60–75 جرام.\n- السناك: 15–20 جرام.\n- **الكمية الخاصة فيك يحددها فريقك الطبي.**\n- الحصة الوحدة (15 جرام) = ثلث كوب رز مطبوخ، أو شريحة توست، أو 3 تمرات صغيرة، أو حبة بطاطس صغيرة، أو نص رغيف عربي صغير.','General examples: main meal women 45–60 g, men 60–75 g; snacks 15–20 g. Your own amount is set by your medical team. One serving (15 g) = ⅓ cup cooked rice, 1 slice toast, 3 small dates, 1 small potato or ½ small Arabic bread.'],
  ['carbs',/نشويات|كربوهيدرات|كارب|\bcarbs?\b/,'**النشويات** هي أكثر شي يرفع السكر بعد الأكل.\n- الحصة الوحدة = 15 جرام نشويات.\n- مثال عام للكبار: 45–60 جرام في الوجبة الرئيسية، و15–20 جرام في السناك، ويختلف من شخص لشخص.','Carbs raise glucose after eating more than anything else. One serving = 15 g. General adult example: 45–60 g per main meal, 15–20 g per snack; needs vary.'],
@@ -1450,7 +1452,7 @@ const LTOP=[
  ['heart',/قلب|كوليسترول|heart|cholesterol/,'**القلب والكوليسترول:**\n- قلّل الدهون المشبعة (تقريباً 13 جرام باليوم كحد أعلى): اللحم الدسم، الدجاج بالجلد، الزبدة، الجبن، القشطة، الآيس كريم، وبعض المقليات.\n- بدّلها بدهون غير مشبعة (زيت الزيتون، المكسرات)، وزِد أوميغا 3 (السمك) والألياف الذائبة.','Limit saturated fat (about 13 g/day max); replace with unsaturated fats; more omega-3 and soluble fiber.'],
  ['app_howto',/كيف استخدم|استخدام التطبيق|how to use/,'**طريقة استخدام طبقي:**\n- **صحني:** أضف الأكل وشوف النشويات والدهون والبروتين.\n- **يومي:** احفظ وجبات اليوم.\n- **ملفي:** نوع السكري، والإنسولين، والحبوب، والحالات الثانية.\n- **تعلّم:** دروس قصيرة.\n- **الزر الأحمر SOS:** وش تسوي في الهبوط.','Plate: add foods and see carbs, fat, protein. My day: save meals. Profile: diabetes type, insulin, tablets, conditions. Learn: short lessons. Red SOS button: what to do in a low.']
 ];
-const LSRC={emergency:'emergency',carb_targets:'carb_targets',carbs:'carbs',plate:'plate',fat:'fat',drinks:'drinks',fixed_dose:'fixed_dose',tablets:'tablets',insulin_types:'insulin_types',honey:'honey',water:'water',label:'label',calories:'calories',cooking:'cooking',salt:'salt_saudi',exercise:'exercise',weight:'weight',ckd:'ckd',potassium_foods:'potassium_foods',heart:'heart',app_howto:'app_howto'};
+const LSRC={serving_def:'carbs',grams_def:'carbs',emergency:'emergency',carb_targets:'carb_targets',carbs:'carbs',plate:'plate',fat:'fat',drinks:'drinks',fixed_dose:'fixed_dose',tablets:'tablets',insulin_types:'insulin_types',honey:'honey',water:'water',label:'label',calories:'calories',cooking:'cooking',salt:'salt_saudi',exercise:'exercise',weight:'weight',ckd:'ckd',potassium_foods:'potassium_foods',heart:'heart',app_howto:'app_howto'};
 function foodNotes(it,row){const c=S.profile.cond||[],id=it[0],out=[];
   if(row.f>HIGH_FAT)out.push(tr('دسمة: فيها أكثر من 30 جرام دهون، والسكر ممكن يرتفع متأخر.','High-fat: over 30 g fat; glucose may rise late.'));
   if(FRIED.has(id))out.push(tr('مقلية: الأفضل مشوية أو بالفرن.','Fried: grilled or baked is better.'));
@@ -1463,7 +1465,7 @@ function foodNotes(it,row){const c=S.profile.cond||[],id=it[0],out=[];
   return out}
 function localAsk(text){
   S.chat.push({role:'user',content:text});
-  const q=' '+normQ(text)+' ', qn=q.replace(/ ال/g,' ');
+  const q=' '+normQ(String(text).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)))+' ', qn=q.replace(/ ال/g,' ');
   const done=()=>{render(); const b=document.getElementById('chatend'); if(b&&b.scrollIntoView)b.scrollIntoView({block:'end'});};
   if(/(نزل|هبوط|هبط|انخفاض|منخفض|طاح) ?(ال)?سكر|سكر(ي)? (نازل|منخفض|طايح)|\blow\b|hypo/.test(qn+q)){
     S.chat.push({role:'assistant',status:'info',content:tr('إذا السكر **أقل من 70**:\n- خذ 15 جرام سكر سريع: نص كوب عصير، أو ملعقة أكل عسل أو سكر، أو تقريباً 3 تمرات.\n- أعد القياس بعد 15 دقيقة، وكرّر إذا لسا منخفض.\n- بعدها كُل وجبة أو سناك.\n- لا تعالج الهبوط بأكل دسم. وإذا عندك مرض كلى شوف تبويب **تعلّم**.','If glucose is **under 70**:\n- Take 15 g fast carbs: ½ cup juice, 1 tbsp honey or sugar, or about 3 dates.\n- Recheck in 15 minutes and repeat if still low.\n- Then eat a meal or snack.\n- Don’t treat a low with fatty food. With kidney disease see the **Learn** tab.'),srcs:[GUIDE.hypo[1]]});return done();}
@@ -1475,7 +1477,7 @@ function localAsk(text){
     for(const nmx of [it[2],it[3]]){const n=normQ(String(nmx).replace(/\(.*?\)/g,''));if(!n)continue;
       const nn=n.replace(/^ال/,'').replace(/ ال/g,' ');
       if(n.length>=3&&(q.includes(' '+n)||qn.includes(' '+nn)))best=Math.max(best,n.length+10);
-      else{for(const w of nn.split(' '))if(w.length>=3&&!['سكر','بدون','صغير','كبير','عادي','مطبوخ','مطبوخه','حبه','sugar'].includes(w)&&qn.includes(' '+w+' '))best=Math.max(best,w.length)}}
+      else{for(const [wi,w] of nn.split(' ').entries())if((w.length>=3||(wi===0&&w.length===2))&&!['سكر','بدون','صغير','كبير','عادي','مطبوخ','مطبوخه','حبه','sugar'].includes(w)&&qn.includes(' '+w+' '))best=Math.max(best,w.length)}}
     if(best)hits.push({it,k,si,best});}
   hits.sort((a,b)=>b.best-a.best);
   const top=hits.length?hits[0]:null;
@@ -1487,6 +1489,16 @@ function localAsk(text){
     let txt=tr('لقيت هذا في قاعدة التطبيق الموثقة (لحصة واحدة). تقدر تغيّر الكمية بعد ما تضيفها لصحنك.','Found in the app’s verified database (one portion). You can change the amount after adding it to your plate.');
     if(kcal!=null)txt+=tr(`\n- السعرات تقريباً **${kcal}** (من الجرامات: نشويات وبروتين 4، دهون 9).`,`\n- About **${kcal}** kcal (from grams: carbs and protein 4, fat 9).`);
     if(r)txt+=tr(`\n- النشويات ${fmt(r.c)} جرام = تقريباً ${fmt(r.c/15)} حصة.`,`\n- Carbs ${fmt(r.c)} g ≈ ${fmt(r.c/15)} servings.`);
+    if(/حصه|حصص|جرام|غرام|serving|gram|\bg\b/.test(qn)){
+      const it=top.it,units=it[4]||[],p100=it[5],fname=nm([it[2],it[3]]);
+      const u15=units.find(u=>Math.abs(u[2]-15)<=1);
+      if(p100&&p100[0]>0)txt+=tr(`\n\n**حصة نشويات وحدة (15 جرام) من ${fname}** = تقريباً ${Math.round(1500/p100[0])} جرام من الأكلة.`,`\n\n**One carb serving (15 g) of ${fname}** ≈ ${Math.round(1500/p100[0])} g of the food.`);
+      else if(u15)txt+=tr(`\n\n**حصة نشويات وحدة (15 جرام) من ${fname}** = ${u15[0]}.`,`\n\n**One carb serving (15 g) of ${fname}** = ${u15[1]}.`);
+      const gm=qn.match(/(\d+(?:\.\d+)?) ?(جرام|غرام|g\b|gram)/);
+      if(gm){const g=parseFloat(gm[1]);
+        if(p100&&g>0){const cg=p100[0]*g/100;txt+=tr(`\n- **${g} جرام ${fname}** فيها تقريباً ${fmt(cg)} جرام نشويات = ${fmt(cg/15)} حصة.`,`\n- **${g} g of ${fname}** has about ${fmt(cg)} g carbs = ${fmt(cg/15)} servings.`);}
+        else txt+=tr(`\n- ما عندي وزن هذي الأكلة بالجرام في قاعدة التطبيق، عندي بالوحدات بس: ${units.map(u=>u[0]+' = '+fmt(u[2])+' جرام نشويات').join('، ')}.`,`\n- I don’t have this food by weight in the app’s database, only by units: ${units.map(u=>u[1]+' = '+fmt(u[2])+' g carbs').join(', ')}.`);}
+    }
     if(/يصلح|يناسب|تناسب|ينفع|تنفع|تصلح|مسموح|اقدر اكل|ممكن اكل|زين|صحي|\bok\b|can i eat/.test(qn)){
       txt+=notes.length?tr('\n\n**هل تناسبك؟** تقدر تتناولها بكمية محسوبة، مع ملاحظات:','\n\n**Is it OK?** Yes in a measured amount, with notes:'):tr('\n\n**هل تناسبك؟** نعم بكمية محسوبة ضمن نشويات وجبتك، وحسب طريقة الطبق.','\n\n**Is it OK?** Yes in a measured amount within your meal carbs, following the plate method.');
       if(S.profile.ins==='fixed')txt+=tr('\n- جرعتك ثابتة: خلّ نشويات الوجبة قريبة من المعتاد.','\n- Your dose is fixed: keep meal carbs close to usual.');}
