@@ -1378,6 +1378,8 @@ const GUIDE={
   calories:['How the app counts calories: each gram of carbohydrate = 4 kcal, protein = 4 kcal, fat = 9 kcal; so calories are an estimate from the grams.','USDA (Atwater factors)'],
   emergency:['Severe low (fainted, cannot swallow, seizure): do NOT put food or drink in the mouth; give glucagon if prescribed and call the Saudi emergency number 997 or go to hospital. Family should know where the glucagon is and how to use it.','ADA 2026 Section 6; Saudi MOH; Okaz 2025 (997)'],
   cooking:['Healthier cooking: oven, grilling or air fryer instead of frying; remove fat from meat and skin from chicken; make half of grains whole (oats, brown rice, bulgur, whole-wheat bread).','American Heart Association; SFDA Saudi Healthy Dish Guide'],
+  exercise:['Physical activity: at least 150 minutes a week of moderate activity (e.g. brisk walking) over at least 3 days, with no more than 2 days in a row without activity; resistance exercise 2–3 times a week on non-consecutive days; break up sitting every 30 minutes. On insulin or sulfonylureas: check glucose before exercise and carry fast carbs. If ketones are present: no exercise. With a foot wound or ulcer: ask the medical team before walking or weight-bearing exercise.','ADA 2026 Section 5'],
+  weight:['For people with overweight and type 2 diabetes, losing 5% or more of body weight improves glucose control; more loss gives more benefit. The plan is set with the dietitian.','ADA 2026 Section 8'],
   ptdm:['Post-transplant diabetes affects up to ~30% of liver transplant recipients; tacrolimus and steroids are main causes; diagnosis only after drug doses stabilize.','Diabetes Therapy 2018 review; Lawendy 2021 meta-analysis'],
 };
 function profileInfo(){const P=S.profile,T=totals(),R=has('ckd')?protRange():null;
@@ -1425,6 +1427,40 @@ Reply with ONLY one JSON object: {"status":"found|estimated|info|no_info","answe
 function dataTurn(){const g=Object.entries(GUIDE).map(([k,v])=>`${k}: ${v[0]} [Source: ${v[1]}]`).join('\n');
   return `PROFILE: ${JSON.stringify(profileInfo())}\n\nGUIDANCE:\n${g}\n\nDATABASE:\n${catalog()}`}
 function normQ(t){return String(t||'').toLowerCase().replace(/[ً-ْـ]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[؟،؛]/g,' ').replace(/[^؀-ۿa-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
+const LTOP=[
+ ['emergency',/اغما|اغمي|اسعاف|جلوكاجون|تشنج|faint|glucagon|seizure/,'إذا كان **هبوط شديد** (أُغمي عليه، أو ما يقدر يبلع، أو تشنّج):\n- لا تحط أكل أو شرب في فمه.\n- أعطه الجلوكاجون إذا موصوف له.\n- اتصل بالإسعاف **997** أو روح المستشفى.','Severe low (fainted, cannot swallow, seizure):\n- Do not put food or drink in the mouth.\n- Give glucagon if prescribed.\n- Call **997** or go to hospital.'],
+ ['carb_targets',/(كم|مقدار)\s?(حصه|حصص|نشويات|كارب)\s?(احتاج|اكل|اخذ|مسموح|في الوجبه|بالوجبه|باليوم)|احتاج كم|per meal/,'**أمثلة عامة** للنشويات:\n- الوجبة الرئيسية: النساء 45–60 جرام، والرجال 60–75 جرام.\n- السناك: 15–20 جرام.\n- **الكمية الخاصة فيك يحددها فريقك الطبي.**\n- الحصة الوحدة (15 جرام) = ثلث كوب رز مطبوخ، أو شريحة توست، أو 3 تمرات صغيرة، أو حبة بطاطس صغيرة، أو نص رغيف عربي صغير.','General examples: main meal women 45–60 g, men 60–75 g; snacks 15–20 g. Your own amount is set by your medical team. One serving (15 g) = ⅓ cup cooked rice, 1 slice toast, 3 small dates, 1 small potato or ½ small Arabic bread.'],
+ ['carbs',/نشويات|كربوهيدرات|كارب|\bcarbs?\b/,'**النشويات** هي أكثر شي يرفع السكر بعد الأكل.\n- الحصة الوحدة = 15 جرام نشويات.\n- مثال عام للكبار: 45–60 جرام في الوجبة الرئيسية، و15–20 جرام في السناك، ويختلف من شخص لشخص.','Carbs raise glucose after eating more than anything else. One serving = 15 g. General adult example: 45–60 g per main meal, 15–20 g per snack; needs vary.'],
+ ['plate',/طريقه الطبق|الطبق الصحي|صحن صحي|طبق صحي|plate method/,'**طبق السكري:**\n- نص الصحن خضار (غير النشوية).\n- ربع بروتين قليل الدهن.\n- ربع نشويات.\n- والشرب ماء. وخل نص الحبوب حبوب كاملة.','Diabetes plate: half non-starchy vegetables, a quarter lean protein, a quarter carbs; water to drink. Make half of grains whole.'],
+ ['fat',/دهون|دسم|\bfat\b/,'الوجبة اللي فيها **أكثر من 30 جرام دهون** تعتبر دسمة.\n- الدهون والبروتين ممكن يأخّرون ارتفاع السكر لين 5–6 ساعات.\n- قس السكر بعد 3 ساعات.\n- أي تغيير في الجرعة يكون مع الطبيب بس.','A meal with more than 30 g fat is high-fat; fat and protein can delay the glucose rise up to 5–6 h. Check glucose 3 h after; dose changes only with the doctor.'],
+ ['drinks',/عصير|مشروب|غازي|بيبسي|كولا|juice|soda/,'**بدّل المشروبات المحلّاة، ومنها العصيرات،** بالماء أو مشروبات بدون سعرات.','Replace sugar-sweetened drinks including juices with water or no-calorie drinks.'],
+ ['fixed_dose',/جرعه ثابته|ثابته|fixed dose/,'إذا **جرعة إبرة الأكل ثابتة**:\n- خلّ كمية النشويات في كل وجبة **متقاربة**، وفي **نفس الوقت** تقريباً، عشان تقلّ احتمالية الهبوط.\n- كمية النشويات لكل وجبة يحددها فريقك الطبي.','With a fixed insulin dose, keep meal carbs consistent in amount and timing to lower lows; the carb target per meal is set by the medical team.'],
+ ['tablets',/حبوب|اماريل|دياميكرون|جلوكوفاج|ميتفورمين|جارديانس|tablet|metformin/,'**الحبوب:**\n- أماريل أو دياميكرون ممكن تسبب هبوط، خصوصاً إذا فوّت وجبة أو كانت صغيرة، أو عندك مرض كلى.\n- جلوكوفاج (ميتفورمين) لحاله نادراً يسبب هبوط.\n- **لا توقف أو تغيّر أي حبوب بدون الطبيب.**','Amaryl or Diamicron can cause lows, more so if a meal is skipped or small, or with kidney disease. Metformin rarely causes lows by itself. Never stop or change tablets without the doctor.'],
+ ['insulin_types',/انسولين|ابره|ابر|نوفورابيد|لانتوس|تريسيبا|نوفومكس|insulin/,'**أنواع الإنسولين:**\n- **سريع المفعول** (إبرة الأكل)، مثل نوفورابيد: يبدأ بسرعة ويغطي الوجبة.\n- **طويل المفعول** (الإبرة القاعدية)، مثل لانتوس أو تريسيبا: غالباً مرة باليوم، يشتغل طول اليوم، وما يغطي الأكل.\n- **المخلوط**، مثل نوفومكس 30: سريع ومتوسط في قلم واحد، ينعطى قبل الأكل.\n- **الجرعة يحددها الطبيب بس.**','Rapid-acting (mealtime) e.g. NovoRapid covers the meal. Long-acting (background) e.g. Lantus or Tresiba, usually once a day. Premixed e.g. NovoMix 30, given before meals. The dose is set only by the doctor.'],
+ ['honey',/عسل|honey/,'**العسل والسكر** نشويات سريعة: ملعقة أكل عسل فيها تقريباً 17 جرام نشويات، فترفع السكر بسرعة. عشان كذا نستخدمها لعلاج الهبوط، ونقللها مع الوجبات.','1 tablespoon honey ≈ 17 g carbs and raises glucose quickly; used to treat a low and limited at meals.'],
+ ['water',/ماء|مويه|اشرب|water/,'**الماء للبالغين الأصحاء** (من كل المشروبات والأكل): تقريباً 2.7 لتر للنساء و3.7 لتر للرجال باليوم.\n- **ما ينطبق** على اللي عندهم غسيل كلى أو فشل قلب أو تقييد سوائل، هؤلاء كميتهم يحددها فريقهم الطبي.','About 2.7 L/day for women and 3.7 L/day for men (all drinks + food) for healthy adults. Not for dialysis, heart failure or a fluid limit — set by the team.'],
+ ['label',/ملصق|label/,'**قراءة الملصق الغذائي:** شوف حجم الحصة، وإجمالي الكربوهيدرات لكل حصة، واضربها في عدد الحصص اللي بتاكلها.','Look at serving size and Total Carbohydrate per serving, then multiply by the servings you eat.'],
+ ['calories',/سعرات|سعره|كالوري|calorie|kcal/,'**السعرات:** كل جرام نشويات = 4 سعرات، وكل جرام بروتين = 4، وكل جرام دهون = 9. التطبيق يحسب السعرات تقديرياً من الجرامات.\n- **احتياجك من السعرات** يحدده أخصائي التغذية حسب وزنك ونشاطك.','Each gram of carbs = 4 kcal, protein = 4, fat = 9; the app estimates calories from grams. Your own calorie needs are set by your dietitian.'],
+ ['cooking',/طبخ|اطبخ|قلي|مقلي|فرن|شوي|مشوي|cook|fried/,'**طبخ أصح:**\n- الفرن أو الشوي أو القلاية الهوائية بدل القلي.\n- شيل الشحم من اللحم، والجلد من الدجاج.\n- خلّ نص الحبوب كاملة: شوفان، رز بني، برغل، خبز بر.','Oven, grill or air fryer instead of frying; remove fat and chicken skin; make half of grains whole.'],
+ ['salt',/ملح|صوديوم|salt|sodium/,'**الملح:** النصيحة العامة أقل من 5 جرام ملح باليوم (تقريباً 2000 ملغ صوديوم).\n- أغلب الملح يجي من الأكل المعلّب والمطاعم والأكل الجاهز، مو من المملحة.\n- إذا عندك ضغط أو قلب أو كلى، فريقك يحدد الحد المناسب لك.','Under 5 g salt/day (about 2,000 mg sodium). Most salt comes from packaged, restaurant and ready food. With blood pressure, heart or kidney disease your team sets your limit.'],
+ ['exercise',/رياضه|مشي|تمارين|تمرين|نشاط|exercise|walk/,'**الرياضة:**\n- 150 دقيقة بالأسبوع على الأقل من نشاط متوسط مثل المشي السريع، موزعة على 3 أيام أو أكثر، ولا تجلس أكثر من يومين ورا بعض بدون حركة.\n- تمارين مقاومة 2–3 مرات بالأسبوع، في أيام غير متتالية.\n- قُم وتحرك كل 30 دقيقة جلوس.\n- إذا تاخذ إنسولين أو أماريل أو دياميكرون: قس السكر قبل الرياضة، وخلّ معك سكر سريع.\n- إذا فيه كيتونات: لا رياضة.\n- إذا عندك جرح أو قرحة في القدم: استشر فريقك قبل المشي.','At least 150 min/week of moderate activity over 3+ days, no more than 2 days in a row without activity; resistance 2–3 times/week; break up sitting every 30 min. On insulin or sulfonylureas check glucose before and carry fast carbs. No exercise with ketones. With a foot wound ask your team before walking.'],
+ ['weight',/وزن|رجيم|تخسيس|سمنه|weight/,'**الوزن:** إذا عندك زيادة وزن وسكري نوع ثاني، نزول **5% أو أكثر** من وزنك يحسّن السكر، وكل ما زاد النزول زادت الفايدة. والخطة تتحدد مع أخصائي التغذية.','With overweight and type 2 diabetes, losing 5% or more of body weight improves glucose; the plan is set with your dietitian.'],
+ ['ckd',/كلي|غسيل|kidney|dialysis/,'**مرض الكلى:**\n- البروتين والبوتاسيوم والفوسفور تتحدد حسب تحاليلك وفريقك الطبي.\n- الصوديوم أقل من 2300 ملغ باليوم إذا ما تسوي غسيل.\n- التفاصيل والأكلات العالية في البوتاسيوم في تبويب **تعلّم**.','Kidney disease: protein, potassium and phosphorus depend on your blood tests and team; sodium under 2,300 mg/day if not on dialysis. Details in the Learn tab.'],
+ ['potassium_foods',/بوتاسيوم|potassium/,'**عالي البوتاسيوم** (200 ملغ أو أكثر للحصة): الموز، التمر، البرتقال وعصيره، المانجو، الرمان، البطاطس، الطماطم، البقوليات، الحليب واللبن، المكسرات.\n**أقل بوتاسيوم:** التفاح، العنب، الفراولة، الحبحب (كوب واحد)، الخيار، الباذنجان، الكوسة، الفلفل.\n- الكمية الكبيرة من الأكل القليل تصير عالية.','High potassium: bananas, dates, oranges/juice, mango, pomegranate, potatoes, tomatoes, legumes, milk/yogurt, nuts. Lower: apples, grapes, strawberries, watermelon (1 cup), cucumber, eggplant, zucchini, peppers.'],
+ ['heart',/قلب|كوليسترول|heart|cholesterol/,'**القلب والكوليسترول:**\n- قلّل الدهون المشبعة (تقريباً 13 جرام باليوم كحد أعلى): اللحم الدسم، الدجاج بالجلد، الزبدة، الجبن، القشطة، الآيس كريم، وبعض المقليات.\n- بدّلها بدهون غير مشبعة (زيت الزيتون، المكسرات)، وزِد أوميغا 3 (السمك) والألياف الذائبة.','Limit saturated fat (about 13 g/day max); replace with unsaturated fats; more omega-3 and soluble fiber.'],
+ ['app_howto',/كيف استخدم|استخدام التطبيق|how to use/,'**طريقة استخدام طبقي:**\n- **صحني:** أضف الأكل وشوف النشويات والدهون والبروتين.\n- **يومي:** احفظ وجبات اليوم.\n- **ملفي:** نوع السكري، والإنسولين، والحبوب، والحالات الثانية.\n- **تعلّم:** دروس قصيرة.\n- **الزر الأحمر SOS:** وش تسوي في الهبوط.','Plate: add foods and see carbs, fat, protein. My day: save meals. Profile: diabetes type, insulin, tablets, conditions. Learn: short lessons. Red SOS button: what to do in a low.']
+];
+const LSRC={emergency:'emergency',carb_targets:'carb_targets',carbs:'carbs',plate:'plate',fat:'fat',drinks:'drinks',fixed_dose:'fixed_dose',tablets:'tablets',insulin_types:'insulin_types',honey:'honey',water:'water',label:'label',calories:'calories',cooking:'cooking',salt:'salt_saudi',exercise:'exercise',weight:'weight',ckd:'ckd',potassium_foods:'potassium_foods',heart:'heart',app_howto:'app_howto'};
+function foodNotes(it,row){const c=S.profile.cond||[],id=it[0],out=[];
+  if(row.f>HIGH_FAT)out.push(tr('دسمة: فيها أكثر من 30 جرام دهون، والسكر ممكن يرتفع متأخر.','High-fat: over 30 g fat; glucose may rise late.'));
+  if(FRIED.has(id))out.push(tr('مقلية: الأفضل مشوية أو بالفرن.','Fried: grilled or baked is better.'));
+  if(['soda','oj','teasugar','chocmilk'].includes(id))out.push(tr('مشروب محلّى: الأفضل ماء أو مشروب بدون سعرات.','Sweetened drink: water or a no-calorie drink is better.'));
+  if(SALT_TOP.has(id)&&(c.includes('htn')||c.includes('heart')||c.includes('ckd')))out.push(tr('من أكثر الأكلات ملحاً، وأنت عندك حالة تحتاج تقليل الملح.','One of the saltiest foods, and your condition needs less salt.'));
+  if(K_HI.has(id)&&c.includes('ckd'))out.push(tr('عالية البوتاسيوم: انتبه للكمية حسب تحاليل الكلى.','High in potassium: watch the amount per your kidney tests.'));
+  if(P_HI.has(id)&&c.includes('ckd'))out.push(tr('فيها فوسفور عالي: انتبه لها مع الكلى.','High in phosphorus: be careful with kidney disease.'));
+  if(SAT_FAT.has(id)&&c.includes('heart'))out.push(tr('فيها دهون مشبعة: قللها مع القلب والكوليسترول.','Saturated fat: limit it with heart disease.'));
+  if(TX_AVOID.has(id)&&c.includes('tx'))out.push(tr('بعد الزراعة: يُنصح بتجنّبها.','After transplant: avoid it.'));
+  return out}
 function localAsk(text){
   S.chat.push({role:'user',content:text});
   const q=' '+normQ(text)+' ', qn=q.replace(/ ال/g,' ');
@@ -1439,16 +1475,30 @@ function localAsk(text){
     for(const nmx of [it[2],it[3]]){const n=normQ(String(nmx).replace(/\(.*?\)/g,''));if(!n)continue;
       const nn=n.replace(/^ال/,'').replace(/ ال/g,' ');
       if(n.length>=3&&(q.includes(' '+n)||qn.includes(' '+nn)))best=Math.max(best,n.length+10);
-      else{for(const w of nn.split(' '))if(w.length>=3&&qn.includes(' '+w+' '))best=Math.max(best,w.length)}}
+      else{for(const w of nn.split(' '))if(w.length>=3&&!['سكر','بدون','صغير','كبير','عادي','مطبوخ','مطبوخه','حبه','sugar'].includes(w)&&qn.includes(' '+w+' '))best=Math.max(best,w.length)}}
     if(best)hits.push({it,k,si,best});}
   hits.sort((a,b)=>b.best-a.best);
-  const top=hits.length?[hits[0]]:[];
-  if(!top.length){
-    S.chat.push({role:'assistant',status:'no_info',content:tr('ما لقيت أكلة بهذا الاسم في قاعدة التطبيق الموثقة.\n- جرّب تكتب اسم الأكلة بس (مثل: كبسة، تمر، خبز).\n- للأسئلة العامة (الهبوط، الإنسولين، الكلى) شوف تبويب **تعلّم**.\n- وإذا ما لقيتها، ركّبها من مكوّناتها في **صحني**، أو استشر فريقك الطبي.','I could not find this food in the app’s verified database.\n- Try just the food name (e.g. kabsa, dates, bread).\n- For general questions (lows, insulin, kidneys) see the **Learn** tab.\n- Or build it from its ingredients in **My plate**, or ask your medical team.')});
+  const top=hits.length?hits[0]:null;
+  const tops=LTOP.filter(t=>t[1].test(qn)||t[1].test(q)).slice(0,1);
+  if(top){
+    const calc=calcItems([{id:top.it[0],unit_index:0,qty:1}]);const r=calc.rows[0];
+    const kcal=r?Math.round(r.c*4+r.p*4+r.f*9):null;
+    const notes=r?foodNotes(top.it,r):[];
+    let txt=tr('لقيت هذا في قاعدة التطبيق الموثقة (لحصة واحدة). تقدر تغيّر الكمية بعد ما تضيفها لصحنك.','Found in the app’s verified database (one portion). You can change the amount after adding it to your plate.');
+    if(kcal!=null)txt+=tr(`\n- السعرات تقريباً **${kcal}** (من الجرامات: نشويات وبروتين 4، دهون 9).`,`\n- About **${kcal}** kcal (from grams: carbs and protein 4, fat 9).`);
+    if(r)txt+=tr(`\n- النشويات ${fmt(r.c)} جرام = تقريباً ${fmt(r.c/15)} حصة.`,`\n- Carbs ${fmt(r.c)} g ≈ ${fmt(r.c/15)} servings.`);
+    if(/يصلح|يناسب|تناسب|ينفع|تنفع|تصلح|مسموح|اقدر اكل|ممكن اكل|زين|صحي|\bok\b|can i eat/.test(qn)){
+      txt+=notes.length?tr('\n\n**هل تناسبك؟** تقدر تتناولها بكمية محسوبة، مع ملاحظات:','\n\n**Is it OK?** Yes in a measured amount, with notes:'):tr('\n\n**هل تناسبك؟** نعم بكمية محسوبة ضمن نشويات وجبتك، وحسب طريقة الطبق.','\n\n**Is it OK?** Yes in a measured amount within your meal carbs, following the plate method.');
+      if(S.profile.ins==='fixed')txt+=tr('\n- جرعتك ثابتة: خلّ نشويات الوجبة قريبة من المعتاد.','\n- Your dose is fixed: keep meal carbs close to usual.');}
+    if(notes.length)txt+='\n'+notes.map(x=>'- '+x).join('\n');
+    if(tops.length)txt+='\n\n'+nm([tops[0][2],tops[0][3]]);
+    const srcs=[...new Set([SRC[top.it[top.si]]?nm(SRC[top.it[top.si]]):'',...tops.map(t=>GUIDE[LSRC[t[0]]]?GUIDE[LSRC[t[0]]][1]:'')].filter(Boolean))];
+    S.chat.push({role:'assistant',status:'found',content:txt,srcs,calc:calc&&calc.rows.length?calc:null});
+  }else if(tops.length){
+    const srcs=[...new Set(tops.map(t=>GUIDE[LSRC[t[0]]]?GUIDE[LSRC[t[0]]][1]:'').filter(Boolean))];
+    S.chat.push({role:'assistant',status:'info',content:tops.map(t=>nm([t[2],t[3]])).join('\n\n'),srcs});
   }else{
-    const calc=calcItems(top.map(h=>({id:h.it[0],unit_index:0,qty:1})));
-    const srcs=[...new Set(top.map(h=>SRC[h.it[h.si]]?nm(SRC[h.it[h.si]]):'').filter(Boolean))];
-    S.chat.push({role:'assistant',status:'found',content:tr('لقيت هذا في قاعدة التطبيق الموثقة (لحصة واحدة). تقدر تغيّر الكمية بعد ما تضيفها لصحنك:','Found in the app’s verified database (one portion). You can change the amount after adding it to your plate:'),srcs,calc:calc&&calc.rows.length?calc:null});
+    S.chat.push({role:'assistant',status:'no_info',content:tr('ما عندي معلومة موثقة عن هذا في التطبيق، فما أقدر أجاوب عليه. استشر فريقك الطبي.\n- لو تسأل عن أكلة: اكتب اسمها بس (مثل: كبسة، تمر، خبز).\n- تقدر تسأل عن: النشويات، السعرات، الرياضة، الوزن، الماء، الملح، الدهون، الإنسولين، الحبوب، الهبوط، الارتفاع، الكلى، القلب.','I have no verified information on this in the app, so I can’t answer. Ask your medical team.\n- For a food, type just its name.\n- You can ask about: carbs, calories, exercise, weight, water, salt, fat, insulin, tablets, lows, highs, kidneys, heart.')});
   }
   done();
 }
