@@ -1424,8 +1424,36 @@ RULES:
 Reply with ONLY one JSON object: {"status":"found|estimated|info|no_info","answer":"text","items":[{"id":"masoub","unit_index":1,"qty":2}],"keys":["fixed_dose"]}`}
 function dataTurn(){const g=Object.entries(GUIDE).map(([k,v])=>`${k}: ${v[0]} [Source: ${v[1]}]`).join('\n');
   return `PROFILE: ${JSON.stringify(profileInfo())}\n\nGUIDANCE:\n${g}\n\nDATABASE:\n${catalog()}`}
+function normQ(t){return String(t||'').toLowerCase().replace(/[ً-ْـ]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[؟،؛]/g,' ').replace(/[^؀-ۿa-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
+function localAsk(text){
+  S.chat.push({role:'user',content:text});
+  const q=' '+normQ(text)+' ', qn=q.replace(/ ال/g,' ');
+  const done=()=>{render(); const b=document.getElementById('chatend'); if(b&&b.scrollIntoView)b.scrollIntoView({block:'end'});};
+  if(/(نزل|هبوط|هبط|انخفاض|منخفض|طاح) ?(ال)?سكر|سكر(ي)? (نازل|منخفض|طايح)|\blow\b|hypo/.test(qn+q)){
+    S.chat.push({role:'assistant',status:'info',content:tr('إذا السكر **أقل من 70**:\n- خذ 15 جرام سكر سريع: نص كوب عصير، أو ملعقة أكل عسل أو سكر، أو تقريباً 3 تمرات.\n- أعد القياس بعد 15 دقيقة، وكرّر إذا لسا منخفض.\n- بعدها كُل وجبة أو سناك.\n- لا تعالج الهبوط بأكل دسم. وإذا عندك مرض كلى شوف تبويب **تعلّم**.','If glucose is **under 70**:\n- Take 15 g fast carbs: ½ cup juice, 1 tbsp honey or sugar, or about 3 dates.\n- Recheck in 15 minutes and repeat if still low.\n- Then eat a meal or snack.\n- Don’t treat a low with fatty food. With kidney disease see the **Learn** tab.'),srcs:[GUIDE.hypo[1]]});return done();}
+  if(/(ارتفع|ارتفاع|طلع|مرتفع|عالي) ?(ال)?سكر|سكر(ي)? (مرتفع|عالي|طالع)|\bhigh\b|hyper/.test(qn+q)){
+    S.chat.push({role:'assistant',status:'info',content:tr('إذا السكر **فوق 240**:\n- عندك جدول تصحيح من طبيبك؟ اتبعه.\n- افحص الكيتونات في البول. إذا موجودة: لا رياضة، وكلّم فريقك الطبي فوراً.\n- إذا بقي مرتفع، كلّم فريقك الطبي.','If glucose is **above 240**:\n- Have a correction plan from your doctor? Follow it.\n- Check urine ketones. If present: no exercise, and call your team now.\n- If it stays high, call your medical team.'),srcs:['American Diabetes Association: Hyperglycemia']});return done();}
+  const hits=[];
+  for(const [list,k,si] of [[ING,'i',7],[MIX,'d',6]])for(const it of list){
+    let best=0;
+    for(const nmx of [it[2],it[3]]){const n=normQ(String(nmx).replace(/\(.*?\)/g,''));if(!n)continue;
+      const nn=n.replace(/^ال/,'').replace(/ ال/g,' ');
+      if(n.length>=3&&(q.includes(' '+n)||qn.includes(' '+nn)))best=Math.max(best,n.length+10);
+      else{for(const w of nn.split(' '))if(w.length>=3&&qn.includes(' '+w+' '))best=Math.max(best,w.length)}}
+    if(best)hits.push({it,k,si,best});}
+  hits.sort((a,b)=>b.best-a.best);
+  const top=hits.length?[hits[0]]:[];
+  if(!top.length){
+    S.chat.push({role:'assistant',status:'no_info',content:tr('ما لقيت أكلة بهذا الاسم في قاعدة التطبيق الموثقة.\n- جرّب تكتب اسم الأكلة بس (مثل: كبسة، تمر، خبز).\n- للأسئلة العامة (الهبوط، الإنسولين، الكلى) شوف تبويب **تعلّم**.\n- وإذا ما لقيتها، ركّبها من مكوّناتها في **صحني**، أو استشر فريقك الطبي.','I could not find this food in the app’s verified database.\n- Try just the food name (e.g. kabsa, dates, bread).\n- For general questions (lows, insulin, kidneys) see the **Learn** tab.\n- Or build it from its ingredients in **My plate**, or ask your medical team.')});
+  }else{
+    const calc=calcItems(top.map(h=>({id:h.it[0],unit_index:0,qty:1})));
+    const srcs=[...new Set(top.map(h=>SRC[h.it[h.si]]?nm(SRC[h.it[h.si]]):'').filter(Boolean))];
+    S.chat.push({role:'assistant',status:'found',content:tr('لقيت هذا في قاعدة التطبيق الموثقة (لحصة واحدة). تقدر تغيّر الكمية بعد ما تضيفها لصحنك:','Found in the app’s verified database (one portion). You can change the amount after adding it to your plate:'),srcs,calc:calc&&calc.rows.length?calc:null});
+  }
+  done();
+}
 async function sendAsk(text){
-  text=String(text||'').trim(); if(!text||S.asking||!SAMPLE)return;
+  text=String(text||'').trim(); if(!text||S.asking)return; if(!SAMPLE){localAsk(text);return;}
   S.chat.push({role:'user',content:text}); S.asking=true; S.askNote=''; S.askProgress=tr('يدوّر في قاعدة الأكل الموثقة ويجهّز الرد… (ممكن ياخذ دقيقة)','Searching the verified database… (may take a minute)'); render();
   askCtl=new AbortController();
   const hist=S.chat.slice(-8).map(m=>({role:m.role,content:m.role==='assistant'?(m.content||'-'):m.content}));
@@ -1438,7 +1466,7 @@ async function sendAsk(text){
     S.chat.push({role:'assistant',content:String(r&&r.answer||tr('ما عندي معلومة موثقة عن هذا، استشر فريقك الطبي.','I have no verified information on this; consult your medical team.')),status,srcs,calc:calc&&calc.rows.length?calc:null});
   }catch(e){const c=e&&e.code;
     if(c==='invalid_json'&&e.text)S.chat.push({role:'assistant',content:String(e.text).slice(0,1500),status:'no_info'});
-    if(['not_granted','sampling_disabled','capability_disabled','not_declared'].includes(c))S.askState='off';
+    if(['not_granted','sampling_disabled','capability_disabled','not_declared'].includes(c)){S.askState='off';S.chat.pop();S.asking=false;localAsk(text);return;}
     if(c!=='cancelled')S.askNote=nm(ASK_ERR[c]||['صار خطأ، جرّب مرة ثانية.','Something went wrong; try again.'])+(c?` (${c})`:'');
     try{console.warn('ask failed',e)}catch(_){}}
   S.asking=false; render(); const b=document.getElementById('chatend'); if(b&&b.scrollIntoView)b.scrollIntoView({block:'end'});
@@ -1454,18 +1482,13 @@ function vAsk(){
   let s=`<section class="card" style="display:flex;flex-direction:column;gap:12px"><div class="sec-title"><h2>${tr('اسأل طبقي','Ask Tabaqi')}</h2></div>
   <p class="small muted" style="margin:0">${tr('مساعد ذكي يجاوب من قاعدة الأكل والمراجع الموثقة في التطبيق، وحسب الحالة المكتوبة في الملف. وإذا ما توفّرت معلومة موثّقة، يوضّح ذلك وينصح باستشارة الفريق الطبي.','An AI assistant that answers from the app’s verified food database and references, based on the profile. If it has no verified information, it says so.')} ${tr('ويشتغل بحساب Claude.','It works with a Claude account.')}</p>`;
   if(S.askState==='loading')s+=`<div class="hint">${tr('يجهّز المساعد…','Preparing the assistant…')}</div>`;
-  else if(S.askState==='off')s+=`<div class="hint" style="display:flex;flex-direction:column;gap:6px"><b>🔑 ${tr('المساعد الذكي يشتغل من داخل Claude بس','The AI assistant runs only inside Claude')}</b>
-  <span>${tr('١. سوّ حساب في Claude (مجاني أو باشتراك)، أو سجّل دخول إذا عندك.','1. Create a Claude account (free or paid), or sign in if you have one.')}</span>
-  <span>${tr('٢. اضغط الزر تحت عشان تفتح نسخة التطبيق اللي فيها المساعد، وأنت مسجّل دخول.','2. Tap the button below to open the app version with the assistant, while signed in.')}</span>
-  <a class="btn btn-primary" style="text-align:center;text-decoration:none;display:block" href="https://claude.ai/artifact/2DVKanw8fsLf8gMzVPddQM" target="_blank" rel="noopener">🤖 ${tr('افتح المساعد الذكي في Claude','Open the AI assistant in Claude')}</a>
-  <span>${tr('٣. أول سؤال بيطلب منك موافقة، وافق.','3. The first question asks for permission; allow it.')}</span>
-  <span class="small muted">${tr('ما تبي تسوي حساب؟ عادي، باقي التطبيق كله يشتغل بدونه. والأكل اللي مو موجود ركّبه من مكوّناته، أو أضفه من الملصق الغذائي.','Don’t want an account? That’s fine; the rest of the app works without it. Build missing foods from their ingredients, or add them from the nutrition label.')}</span></div>`;
+  else if(S.askState==='off')s+=`<div class="hint" style="display:flex;flex-direction:column;gap:4px"><b>🔎 ${tr('وضع البحث في قاعدة الأكل','Food database search mode')}</b><span>${tr('اكتب اسم الأكلة، ويطلع لك كم فيها نشويات ودهون وبروتين من قاعدة التطبيق الموثقة. يشتغل مع كل الحسابات.','Type a food name to see its carbs, fat and protein from the app’s verified database. Works for everyone.')}</span><span class="small muted">${tr('المساعد الذكي الكامل (اللي يجاوب على أي سؤال) يشتغل من داخل Claude، إذا حسابك يدعمه:','The full AI assistant (any question) runs inside Claude, if your account supports it:')}</span><a class="btn btn-ghost" style="text-align:center;text-decoration:none;display:block" href="https://claude.ai/artifact/2DVKanw8fsLf8gMzVPddQM" target="_blank" rel="noopener">🤖 ${tr('افتح المساعد الذكي في Claude','Open the AI assistant in Claude')}</a></div>`;
   s+=`<div class="chat">${S.chat.map((m,i)=>`<div class="msg ${m.role==='user'?'me':'bot'}">${m.role==='user'?esc(m.content):`${m.status==='estimated'?`<span class="flag f-warn">${tr('تقدير من المكوّنات','Estimate from ingredients')}</span>`:m.status==='found'?`<span class="flag f-ok">${tr('من قاعدة التطبيق','From the app database')}</span>`:''}${m.status==='info'?`<span class="flag f-ok">${tr('من مراجع التطبيق','From the app’s references')}</span>`:''}${md(m.content)}${m.calc?calcCard(m.calc,i):''}${m.srcs&&m.srcs.length?`<div class="small muted" style="margin-top:6px">${tr('المصدر: ','Source: ')}${esc(m.srcs.join(' · '))}</div>`:''}`}</div>`).join('')}
    ${S.asking?`<div class="msg bot"><div class="small muted" id="askprog">${esc(S.askProgress)}</div></div>`:''}<div id="chatend"></div></div>
    ${S.askNote?`<div class="hint">${esc(S.askNote)}</div>`:''}
-   ${!S.chat.length&&S.askState!=='off'?`<div class="chips" style="flex-wrap:wrap">${sugg.map(q=>`<button class="chip" data-a="asksug" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}
-   <div class="askrow"><textarea id="askq" rows="2" placeholder="${tr('اكتب اسم الأكلة أو سؤالك…','Type a food or your question…')}" ${S.askState!=='ok'||S.asking?'disabled':''}></textarea>
-   ${S.asking?`<button class="btn btn-ghost" data-a="askstop">${tr('إيقاف','Stop')}</button>`:`<button class="btn btn-primary" data-a="asksend" ${S.askState!=='ok'?'disabled':''}>${tr('اسأل','Ask')}</button>`}</div>
+   ${!S.chat.length?`<div class="chips" style="flex-wrap:wrap">${(S.askState==='off'?[tr('كبسة','Kabsa'),tr('تمر','Dates'),tr('خبز عربي','Arabic bread'),tr('معصوب','Masoub')]:sugg).map(q=>`<button class="chip" data-a="asksug" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}
+   <div class="askrow"><textarea id="askq" rows="2" placeholder="${tr('اكتب اسم الأكلة أو سؤالك…','Type a food or your question…')}" ${S.asking?'disabled':''}></textarea>
+   ${S.asking?`<button class="btn btn-ghost" data-a="askstop">${tr('إيقاف','Stop')}</button>`:`<button class="btn btn-primary" data-a="asksend">${tr('اسأل','Ask')}</button>`}</div>
    ${S.chat.length&&!S.asking?`<button class="chip" data-a="askclear" style="align-self:flex-start">${tr('محادثة جديدة','New chat')}</button>`:''}
    <div class="small muted">${tr('معلومة تثقيفية، ولا تغني عن فريقك الطبي.','Educational only; not a substitute for your medical team.')}</div></section>`;
   return s;
