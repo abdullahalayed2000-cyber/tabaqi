@@ -564,6 +564,7 @@ function syncIns(P){if(P.type==='t1'){P.insL=['rapid','basal'];P.ins=P.rmode==='
 function normProfile(p){
   p={...BASE,...(p||{})};
   if(p.role==='care')p.role='patient';
+  if(p.type==='other')p.type='t2'; /* app covers type 1 and type 2 only */
   if(p.type==='t2i'){p.type='t2';p.ins='calc'}
   if(p.type==='t2n'){p.type='t2';if(!['basal','none','fixed'].includes(p.ins))p.ins='none'}
   if(!Array.isArray(p.cond))p.cond=[];
@@ -1091,7 +1092,7 @@ function vProfile(){
   <div class="opts">${opt('role','patient',P.role,tr('المريض أو أحد من أهله','The patient or a family member'))}
   ${opt('role','pro',P.role,tr('أنا من الفريق الصحي','I am a health professional'),tr('طبيب، أخصائي تغذية، ممرض، مثقف سكري','Doctor, dietitian, nurse, diabetes educator'))}</div></section>
   <section class="card" style="display:flex;flex-direction:column;gap:12px"><h2 style="font-size:17px">${Y('وش نوع السكري عندك؟','وش نوع السكري عند المريض؟','What type of diabetes do you have?','What type of diabetes does the patient have?')}</h2>
-  <div class="opts">${opt('ptype','t1',P.type,tr('النوع الأول','Type 1'))}${opt('ptype','t2',P.type,tr('النوع الثاني','Type 2'))}${opt('ptype','other',P.type,tr('نوع آخر أو غير محدد','Other or not specified'),tr('مثل السكري بعد الزراعة، أو إذا النوع غير مكتوب في الملف','e.g. post-transplant diabetes, or type not documented'))}</div></section>
+  <div class="opts">${opt('ptype','t1',P.type,tr('النوع الأول','Type 1'))}${opt('ptype','t2',P.type,tr('النوع الثاني','Type 2'))}</div></section>
   <section class="card" style="display:flex;flex-direction:column;gap:12px"><h2 style="font-size:17px">${tr('العلاج','Treatment')}</h2>`;
   const t1x=P.type==='t1', onIns=t1x||P.onIns==='yes', IL=P.insL||[];
   const ib=(v,a,e,sa,se)=>`<button class="opt" aria-pressed="${IL.includes(v)}" data-a="insl" data-v="${v}"><span class="check"></span><span><b>${tr(a,e)}</b><small>${tr(sa,se)}</small></span></button>`;
@@ -1383,7 +1384,7 @@ const GUIDE={
   ptdm:['Post-transplant diabetes affects up to ~30% of liver transplant recipients; tacrolimus and steroids are main causes; diagnosis only after drug doses stabilize.','Diabetes Therapy 2018 review; Lawendy 2021 meta-analysis'],
 };
 function profileInfo(){const P=S.profile,T=totals(),R=has('ckd')?protRange():null;
-  return {user_role:{patient:'the patient',care:'a family member/caregiver',pro:'a health professional'}[P.role],diabetes_type:{t1:'type 1',t2:'type 2',other:'other or not specified'}[P.type],
+  return {user_role:{patient:'the patient',care:'a family member/caregiver',pro:'a health professional'}[P.role],diabetes_type:{t1:'type 1',t2:'type 2'}[P.type],
     insulin:{calc:'calculates mealtime dose from carbs',fixed:`${P.mix?'premixed insulin (e.g. NovoMix 30), ':''}fixed mealtime dose ${P.fixed||'?'} units`,basal:'long-acting insulin only',none:'no insulin'}[insMode()],
     insulin_injections:(P.type==='t1'||P.onIns==='yes')?(P.insL||[]).map(x=>({rapid:'rapid-acting mealtime (e.g. NovoRapid)',basal:'long-acting basal (e.g. Lantus/Tresiba)',mix:'premixed (e.g. NovoMix 30)'}[x])):[],
     fixed_dose_carb_target_per_meal:insMode()==='fixed'?(fixedTeam()?`${P.fmin}-${P.fmax} g (set by team)`:'not known; app compares meals with the person’s usual meals (ADA 5.28 consistency)'):null,
@@ -1626,7 +1627,7 @@ document.addEventListener('click',e=>{
     case 'demo': {const r=P.role;
       if(v==='t1'){S.profile={...BASE,role:r};S.bg='';S.plate=samplePlate();S.log={date:today(),meals:{}};S.mealType='lunch'}
       else if(v==='t2'){S.profile={...BASE,role:r,type:'t2',ins:'none',secr:'no'};S.bg='';S.plate=samplePlate();S.log={date:today(),meals:{}};S.mealType='lunch'}
-      else{S.profile={...BASE,role:r,type:'other',ins:'fixed',fixed:14,fmin:45,fmax:60,secr:'no',cond:['ckd','htn','tx'],ckdType:'nd',wt:78,ht:160,sex:'f'};S.bg='';S.plate=demoPlate();S.log={date:today(),meals:{breakfast:{c:30,f:8}}};S.mealType='lunch'}
+      else{S.profile={...BASE,role:r,type:'t2',ins:'fixed',fixed:14,fmin:45,fmax:60,secr:'no',cond:['ckd','htn','tx'],ckdType:'nd',wt:78,ht:160,sex:'f'};S.bg='';S.plate=demoPlate();S.log={date:today(),meals:{breakfast:{c:30,f:8}}};S.mealType='lunch'}
       S.tab='plate'; window.scrollTo(0,0); break;}
     case 'pick': S.game.picked=+v; {const Gm=S.game,it=Gm.qs[Gm.i].it,c=Math.round(it[4][it[4].length-1][2]); if(+v===c){Gm.streak++;Gm.score+=10}else Gm.streak=0;} break;
     case 'next': {const Gm=S.game; if(Gm.i<Gm.qs.length-1){Gm.i++;Gm.picked=null}else{Gm.done=true;if(Gm.score>S.best){S.best=Gm.score;save('best',S.best)}}} break;
